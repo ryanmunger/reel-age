@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import './App.css';
 
 import axios from 'axios';
-import { differenceInCalendarYears } from 'date-fns';
+import { differenceInCalendarYears, getYear } from 'date-fns';
 
 const API_KEY = '7b25c97101de1db8db80fe1bfae994e0';
 
 const API = {
-  searchPersonUrl: `https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&language=en-US&page=1&include_adult=false&append_to_response=movies`,
+  searchPersonUrl: `https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&language=en-US&page=1&include_adult=false`,
+  searchMoviesUrl: `https://api.themoviedb.org/3/search/movies?api_key=${API_KEY}&language=en-US&page=1&include_adult=false`,
   getMoviesUrl: (id) => `https://api.themoviedb.org/3/person/${id}/movie_credits?api_key=${API_KEY}&language=en-US`,
   getActorUrl: (id) => `https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&language=en-US`,
 };
@@ -19,13 +20,13 @@ const handleOnChange = (setData) => (e) => {
     actorAge: null,
   }));
   if (e.target.value) {
-    axios.get(
-      `${API.searchPersonUrl}&query=${e.target.value}`
-    ).then((response) => {
+    axios.get(`${API.searchPersonUrl}&query=${e.target.value}`).then((response) => {
       setData(data => ({
         ...data,
         searchResults: response.data.results,
       }));
+    }).then(response => {
+      console.log(response);
     })
   }
   setData(data => ({
@@ -65,6 +66,10 @@ const App = () => {
     actorDetails: [],
     actorAge: null,
   });
+
+  const sortedActorDetails = data.actorDetails && data.actorDetails.sort((a, b) => {
+    return getYear(a.release_date) - getYear(b.release_date);
+  });
   return (
     <>
       <input onChange={handleOnChange(setData)} />
@@ -79,10 +84,13 @@ const App = () => {
         )
         )}
       {
-        data.actorDetails && data.actorDetails.map(actorDetail =>
-          <div key={actorDetail.id}>
-            {actorDetail.original_title} - <strong>{differenceInCalendarYears(actorDetail.release_date, data.actorAge)}</strong>
-          </div>
+        sortedActorDetails && sortedActorDetails.map(actorDetail =>
+        (
+            actorDetail.release_date &&
+              <div key={actorDetail.id}>
+                {actorDetail.original_title} - <strong>{differenceInCalendarYears(actorDetail.release_date, data.actorAge)}</strong>
+              </div>
+            )
         )
       }
     </>
